@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>D3 Example</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style> 
+       .dot {
+            fill: steelblue;
+            stroke: black;
+        }
+     </style>
+</head>
+<body>
+    <script>
+       var margin = {top: 20, right: 20, bottom: 30, left: 50},
+           width = 960 - margin.left - margin.right,
+           height = 500 - margin.top - margin.bottom;
+
+       // Set the ranges
+       var x = d3.scaleTime().range([0, width]);
+       var y = d3.scaleLinear().range([height, 0]);
+
+       var valueline = d3.line()
+           .x(function(d) { return x(d.qbr_total); })
+           .y(function(d) { return y(d.qb_plays); });
+
+       var svg = d3.select("body").append("svg")
+           .attr("width", width + margin.left + margin.right)
+           .attr("height", height + margin.top + margin.bottom)
+           .append("g")
+           .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+       
+       d3.csv("qbr_season_level.csv").then(function(data) {
+           // Parse data
+           data.forEach(function(d) {
+               d.qbr_total = +d.qbr_total;
+               d.qb_plays = +d.qb_plays;
+           });
+
+           // Scale the range of the data
+           x.domain([0, 100]);
+
+           y.domain([0, d3.max(data, function(d) { return d.qb_plays; })]);
+
+          // Add the scatter plot
+          svg.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", function(d) { return x(d.qbr_total); }) // x position
+                .attr("cy", function(d) { return y(d.qb_plays); })  // y position
+                .attr("r", 5); // Radius of the circle
+
+           // Add the X Axis
+           svg.append("g")
+               .attr("transform", "translate(0," + height + ")")
+               .call(d3.axisBottom(x)
+                    .tickFormat(d3.format("d")) // Format ticks as integers
+                );
+
+           // Add the Y Axis
+           svg.append("g")
+               .call(d3.axisLeft(y));
+            
+            // Add X Axis Label
+            svg.append("text")
+                .attr("x", width / 2) // Centered horizontally
+                .attr("y", height + margin.bottom - 5) // Below the X axis
+                .text("QBR Total");
+
+            // Add Y Axis Label
+            svg.append("text")
+                .attr("x", -(height / 2)) // Centered vertically
+                .attr("y", -margin.left + 15) // To the left of the Y axis
+                .attr("transform", "rotate(-90)") // Rotate the label
+                .text("QB Plays");
+
+       }).catch(function(error) {
+           console.error("Error loading CSV data:", error);
+       });
+    </script>
+</body>
+</html>
